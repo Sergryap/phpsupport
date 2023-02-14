@@ -1,1 +1,4 @@
 Django==4.1.7
+python-telegram-bot==20.1
+phonenumbers==8.13.6
+django-phonenumber-field==7.0.2
