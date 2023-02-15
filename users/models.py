@@ -16,6 +16,12 @@ class User(AbstractUser):
         null=True,
         blank=True
     )
+    bot_state = models.CharField(
+        'Текущее состояние бота',
+        max_length=100,
+        blank=True,
+        help_text="Стейт-машина бота"
+    )
 
     class Meta:
         verbose_name = 'Пользователь'

@@ -16,7 +16,7 @@ from telegram.ext import (
     )
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
-from service.models import Profile
+from users.models import User
 from service.tg_lib import (
     show_auth_keyboard,
     show_send_contact_keyboard,
@@ -30,7 +30,7 @@ from pprint import pprint
 def get_user(func):
     def wrapper(update, context):
         chat_id = update.effective_chat.id
-        user, _ = Profile.objects.get_or_create(telegram_id=chat_id)
+        user, _ = User.objects.get_or_create(telegram_id=chat_id)
         context.user_data['user'] = user
         return func(update, context)
     return wrapper
