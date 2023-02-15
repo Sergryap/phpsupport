@@ -16,7 +16,7 @@ from telegram.ext import (
     )
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
-from users.models import User
+from users.models import User, Freelancer, Customer
 from service.tg_lib import (
     show_auth_keyboard,
     show_send_contact_keyboard,
@@ -87,14 +87,20 @@ def handle_auth(update, context):
     if update.callback_query:
         user_data = context.user_data
         ############# Данные для записи в БД ###############
+        name_data = user_data['full_name'].split()
         name = user_data['full_name'].split()[0].strip()
-        surname = user_data['full_name'].split()[1].strip()
+        surname = user_data['full_name'].split()[1].strip() if len(name_data) > 1 else ''
         phone_number = user_data['phone_number']
         ####################################################
+        user.phone_number = phone_number
+        user.first_name = name
+        user.last_name = surname
+        user.save()
         status = update.callback_query.data
         print(status)
         pprint(user_data)
         if status == 'Freelancer':
+
             context.user_data['status'] = 'Freelancer'
             show_freelancer_start(context, chat_id)
             pprint(context.user_data)
@@ -108,8 +114,6 @@ def handle_auth(update, context):
     if update.message.contact:
         phone_number = update.message.contact.phone_number
         if phone_number and phonenumbers.is_valid_number(phonenumbers.parse(phone_number, 'RU')):
-            # user.phone_number = phone_number
-            # user.save()
             context.user_data['phone_number'] = phone_number
             context.bot.send_message(
                 chat_id=chat_id,
@@ -129,8 +133,6 @@ def handle_auth(update, context):
             context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
             return 'HANDLE_AUTH'
         else:
-            # user.full_name = update.message.text
-            # user.save()
             show_auth_user_type(context, chat_id)
             context.user_data['full_name'] = update.message.text
             return 'HANDLE_AUTH'
