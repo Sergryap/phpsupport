@@ -34,6 +34,17 @@ class Profile(models.Model):
         db_index=True,
         max_length=30,
     )
+    bot_state = models.CharField(
+        'Текущее состояния бота',
+        max_length=100,
+        blank=True,
+        help_text="Стейт машина бота"
+    )
+    full_name = models.CharField(
+        'Полное имя',
+        max_length=200,
+        blank=True,
+    )
 
 
 class Order(models.Model):
@@ -45,13 +56,13 @@ class Order(models.Model):
         ('5 expired', 'Просрочен')
     ]
     client = models.ForeignKey(
-        User,
+        Profile,
         on_delete=models.CASCADE,
         related_name='client_orders',
         verbose_name='Клиент',
     )
     freelancer = models.ForeignKey(
-        User,
+        Profile,
         on_delete=models.CASCADE,
         related_name='freelancer_orders',
         verbose_name='Фрилансер',
