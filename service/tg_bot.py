@@ -15,7 +15,7 @@ from telegram.ext import (
     MessageHandler,
     )
 
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
 from service.models import Profile
 from service.tg_lib import (
     show_auth_keyboard,
@@ -134,3 +134,37 @@ def handle_auth(update, context):
             show_auth_user_type(context, chat_id)
             context.user_data['full_name'] = update.message.text
             return 'HANDLE_AUTH'
+
+
+def handle_customer(update, context):
+    if update.callback_query and update.callback_query.data in ['economic', 'standard', 'vip']:
+        user_reply = update.callback_query.data
+        value = {'economic': 500, 'standard': 1000, 'vip': 3000}
+        total_value = value[user_reply]
+        context.bot.send_invoice(
+            chat_id=update.effective_chat.id,
+            title='Оплата заказа в pizza-store',
+            description='Payment Example using python-telegram-bot',
+            payload='Custom-Payload',
+            provider_token=os.environ['PROVIDER_TOKEN'],
+            currency='RUB',
+            prices=[LabeledPrice('Test', total_value * 100)]
+        )
+        return 'PRECHECKOUT'
+
+
+def precheckout_callback(update: Update, context: CallbackContext):
+    query = update.pre_checkout_query
+    if query.invoice_payload != 'Custom-Payload':
+        context.bot.answer_pre_checkout_query(
+            pre_checkout_query_id=query.id,
+            ok=False,
+            error_message="Something went wrong...")
+    else:
+        context.bot.answer_pre_checkout_query(pre_checkout_query_id=query.id, ok=True)
+    # context.bot.send_message(
+    #     chat_id=update.effective_user.id,
+    #     text='Хотите продолжить?',
+    #     reply_markup=btn.get_restart_button()
+    # )
+    return 'HANDLE_CUSTOMER'

@@ -5,6 +5,8 @@ from service.tg_bot import (
     TgDialogBot,
     start,
     handle_auth,
+    handle_customer,
+    precheckout_callback
 )
 
 
@@ -24,7 +26,8 @@ def start_bot():
         {
             'START': start,
             'HANDLE_AUTH': handle_auth,
-            # 'HANDLE_SELECTIONS': handle_select,
+            'HANDLE_CUSTOMER': handle_customer,
+            'PRECHECKOUT': precheckout_callback
 
         }
     )
