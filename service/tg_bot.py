@@ -15,7 +15,7 @@ from telegram.ext import (
 
 from telegram import Update
 from telegram.ext.filters import Text, CONTACT
-from django.contrib.auth.models import User
+from users.models import User
 
 
 def get_user(func):

@@ -1,49 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from phonenumber_field.modelfields import PhoneNumberField
-
-
-class Profile(models.Model):
-    status_choices = [
-        ('not processed', 'Не обработан'),
-        ('Customer', 'Заказчик'),
-        ('Freelancer', 'Фрилансер'),
-        ('Admin', 'Администратор'),
-    ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    phone_number = PhoneNumberField(
-        verbose_name='Телефон',
-        db_index=True,
-        region='RU',
-        unique=True,
-    )
-    telegram_id = models.IntegerField(
-        'Telegram Id',
-        db_index=True,
-        blank=True,
-        null=True
-    )
-    status = models.CharField(
-        verbose_name='Статус',
-        choices=status_choices,
-        default='not processed',
-        db_index=True,
-        max_length=20,
-    )
-
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+from users.models import Customer, Freelancer
 
 
 class Order(models.Model):
@@ -55,13 +11,13 @@ class Order(models.Model):
         ('5 expired', 'Просрочен')
     ]
     client = models.ForeignKey(
-        User,
+        Customer,
         on_delete=models.CASCADE,
         related_name='client_orders',
         verbose_name='Клиент',
     )
     freelancer = models.ForeignKey(
-        User,
+        Freelancer,
         on_delete=models.CASCADE,
         related_name='freelancer_orders',
         verbose_name='Фрилансер',
@@ -81,7 +37,7 @@ class Order(models.Model):
     )
     created_at = models.DateTimeField(
         verbose_name='Время создания',
-        default=timezone.now()
+        auto_now_add=True
     )
     deadline = models.DateTimeField(
         verbose_name='Срок выполнения',

@@ -4,7 +4,7 @@ from django.core.management import BaseCommand
 from service.tg_bot import (
     TgDialogBot,
     start,
-    # handle_auth,
+    handle_auth,
 )
 
 
@@ -23,7 +23,7 @@ def start_bot():
         settings.TELEGRAM_ACCESS_TOKEN,
         {
             'START': start,
-            # 'HANDLE_AUTH': handle_auth,
+            'HANDLE_AUTH': handle_auth,
             # 'HANDLE_SELECTIONS': handle_select,
 
         }
