@@ -5,7 +5,7 @@ import telegram.ext
 
 
 from telegram.ext import (
-    ApplicationBuilder,
+    Updater,
     CallbackQueryHandler,
     PollAnswerHandler,
     CommandHandler,
@@ -14,14 +14,15 @@ from telegram.ext import (
     )
 
 from telegram import Update
-from telegram.ext.filters import Text, CONTACT
 from django.contrib.auth.models import User
+
+from service.models import Profile
 
 
 def get_user(func):
     def wrapper(update, context):
         chat_id = update.message.chat_id
-        user, _ = User.objects.get_or_create(profile__telegram_id=chat_id)
+        user, _ = Profile.objects.get_or_create(telegram_id=chat_id)
         context.user_data['user'] = user
         return func(update, context)
     return wrapper
@@ -32,8 +33,8 @@ class TgDialogBot:
     def __init__(self, tg_token, states_functions):
         self.tg_token = tg_token
         self.states_functions = states_functions
-        self.application = ApplicationBuilder().token(tg_token).build()
-        self.application.add_handler(CommandHandler('start', get_user(self.handle_users_reply)))
+        self.updater = Updater(token=tg_token, use_context=True)
+        self.updater.dispatcher.add_handler(CommandHandler('start', get_user(self.handle_users_reply)))
 
     def handle_users_reply(self, update, context):
         user = context.user_data['user']
@@ -57,7 +58,7 @@ class TgDialogBot:
             user_state = user_state if user_state else 'HANDLE_AUTH'
 
         state_handler = self.states_functions[user_state]
-        next_state = state_handler(context.bot, update, context)
+        next_state = state_handler(update, context)
         user.bot_state = next_state
 
 

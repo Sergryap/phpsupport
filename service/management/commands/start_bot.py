@@ -20,7 +20,7 @@ class Command(BaseCommand):
 def start_bot():
 
     bot = TgDialogBot(
-        settings.TELEGRAM_ACCESS_TOKEN,
+        settings.TELEGRAM_TOKEN,
         {
             'START': start,
             # 'HANDLE_AUTH': handle_auth,
@@ -28,5 +28,5 @@ def start_bot():
 
         }
     )
-    bot.application.run_polling()
-    bot.application.idle()  # required in detached mode on server
+    bot.updater.start_polling()
+    bot.updater.idle()  # required in detached mode on server
