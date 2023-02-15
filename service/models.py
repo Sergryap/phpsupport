@@ -1,50 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from phonenumber_field.modelfields import PhoneNumberField
-
-
-class Profile(models.Model):
-    status_choices = [
-        ('not processed', 'Не обработан'),
-        ('Customer', 'Заказчик'),
-        ('Freelancer', 'Фрилансер'),
-        ('Admin', 'Администратор'),
-    ]
-    phone_number = PhoneNumberField(
-        verbose_name='Телефон',
-        db_index=True,
-        region='RU',
-        unique=True,
-        blank=True,
-        null=True
-    )
-    telegram_id = models.IntegerField(
-        'Telegram Id',
-        db_index=True,
-        blank=True,
-        null=True
-    )
-    status = models.CharField(
-        verbose_name='Статус',
-        choices=status_choices,
-        default='not processed',
-        db_index=True,
-        max_length=30,
-    )
-    bot_state = models.CharField(
-        'Текущее состояния бота',
-        max_length=100,
-        blank=True,
-        help_text="Стейт машина бота"
-    )
-    full_name = models.CharField(
-        'Полное имя',
-        max_length=200,
-        blank=True,
-    )
+from users.models import Customer, Freelancer
 
 
 class Order(models.Model):
@@ -56,26 +11,20 @@ class Order(models.Model):
         ('5 expired', 'Просрочен')
     ]
     client = models.ForeignKey(
-        Profile,
+        Customer,
         on_delete=models.CASCADE,
         related_name='client_orders',
         verbose_name='Клиент',
     )
     freelancer = models.ForeignKey(
-        Profile,
+        Freelancer,
         on_delete=models.CASCADE,
         related_name='freelancer_orders',
         verbose_name='Фрилансер',
     )
-    title = models.CharField(
-        verbose_name='Название заказа',
-        max_length=50,
-        null=True,
-        blank=True
-    )
     description = models.TextField(
         verbose_name='Описание заказа',
-        max_length=255,
+        max_length=100,
         null=True,
         blank=True
     )
@@ -88,7 +37,7 @@ class Order(models.Model):
     )
     created_at = models.DateTimeField(
         verbose_name='Время создания',
-        default=timezone.now()
+        auto_now_add=True
     )
     deadline = models.DateTimeField(
         verbose_name='Срок выполнения',
