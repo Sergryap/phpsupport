@@ -17,7 +17,14 @@ from telegram.ext import (
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from service.models import Profile
-from service.tg_lib import show_auth_keyboard, show_send_contact_keyboard
+from service.tg_lib import (
+    show_auth_keyboard,
+    show_send_contact_keyboard,
+    show_auth_user_type,
+    show_freelancer_start,
+    show_customer_start
+)
+from pprint import pprint
 
 
 def get_user(func):
@@ -57,7 +64,7 @@ class TgDialogBot:
 
         if user_reply == '/start':
             user_state = 'START'
-
+            context.user_data.update({'chat_id': chat_id, 'full_name': '', 'phone_number': ''})
         else:
             user_state = user.bot_state
             user_state = user_state if user_state else 'HANDLE_AUTH'
@@ -76,18 +83,34 @@ def start(update, context):
 
 def handle_auth(update, context):
     user = context.user_data['user']
+    chat_id = update.effective_chat.id
     if update.callback_query:
-        user.status = update.callback_query.data
-        user.save()
-        return 'HANDLE_AUTH'
+        user_data = context.user_data
+        ############# Данные для записи в БД ###############
+        name = user_data['full_name'].split()[0].strip()
+        surname = user_data['full_name'].split()[1].strip()
+        phone_number = user_data['phone_number']
+        ####################################################
+        status = update.callback_query.data
+        print(status)
+        pprint(user_data)
+        if status == 'Freelancer':
+            context.user_data['status'] = 'Freelancer'
+            show_freelancer_start(context, chat_id)
+            pprint(context.user_data)
+            return 'HANDLE_FREELANCER'
+        elif status == 'Customer':
+            context.user_data['status'] = 'Customer'
+            show_customer_start(context, chat_id)
+            return 'HANDLE_CUSTOMER'
     if not update.message:
         return 'HANDLE_AUTH'
-    chat_id = update.message.chat_id
     if update.message.contact:
         phone_number = update.message.contact.phone_number
         if phone_number and phonenumbers.is_valid_number(phonenumbers.parse(phone_number, 'RU')):
-            user.phone_number = phone_number
-            user.save()
+            # user.phone_number = phone_number
+            # user.save()
+            context.user_data['phone_number'] = phone_number
             context.bot.send_message(
                 chat_id=chat_id,
                 text=f'Введите Ваше Имя и Фамилию:',
@@ -106,19 +129,8 @@ def handle_auth(update, context):
             context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
             return 'HANDLE_AUTH'
         else:
-            user.full_name = update.message.text
-            user.save()
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text='Выберите, кем вы являетесь:',
-                reply_markup=InlineKeyboardMarkup(
-                    inline_keyboard=[
-                        [
-                            InlineKeyboardButton('Заказчик', callback_data='Customer'),
-                            InlineKeyboardButton('Фрилансер', callback_data='Freelancer')
-                        ]
-                    ],
-                    resize_keyboard=True
-                )
-            )
+            # user.full_name = update.message.text
+            # user.save()
+            show_auth_user_type(context, chat_id)
+            context.user_data['full_name'] = update.message.text
             return 'HANDLE_AUTH'

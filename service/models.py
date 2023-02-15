@@ -67,9 +67,15 @@ class Order(models.Model):
         related_name='freelancer_orders',
         verbose_name='Фрилансер',
     )
+    title = models.CharField(
+        verbose_name='Название заказа',
+        max_length=50,
+        null=True,
+        blank=True
+    )
     description = models.TextField(
         verbose_name='Описание заказа',
-        max_length=100,
+        max_length=255,
         null=True,
         blank=True
     )
