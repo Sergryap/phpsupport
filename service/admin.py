@@ -3,7 +3,26 @@ from .models import Order
 from users.models import User, Customer, Freelancer
 
 
-admin.site.register(Order)
-admin.site.register(User)
-admin.site.register(Customer)
-admin.site.register(Freelancer)
+class OrderInline(admin.TabularInline):
+    model = Order
+    
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Freelancer)
+class FreelancerAdmin(admin.ModelAdmin):
+    inlines = [
+        OrderInline
+    ]
