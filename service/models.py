@@ -26,6 +26,8 @@ class Order(models.Model):
         on_delete=models.CASCADE,
         related_name='freelancer_orders',
         verbose_name='Фрилансер',
+        null=True,
+        blank=True
     )
     description = models.TextField(
         verbose_name='Описание заказа',

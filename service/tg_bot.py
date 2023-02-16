@@ -17,12 +17,16 @@ from telegram.ext import (
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
 from users.models import User, Freelancer, Customer
+from service.models import Order
 from service.tg_lib import (
     show_auth_keyboard,
     show_send_contact_keyboard,
     show_auth_user_type,
     show_freelancer_start,
-    show_customer_start
+    show_customer_start,
+    show_creating_order_step,
+    show_customer_step,
+    show_customer_orders
 )
 from pprint import pprint
 
@@ -85,23 +89,25 @@ def handle_auth(update, context):
     user = context.user_data['user']
     chat_id = update.effective_chat.id
     if update.callback_query:
-        user_data = context.user_data
-        ############# Данные для записи в БД ###############
-        name_data = user_data['full_name'].split()
-        name = user_data['full_name'].split()[0].strip()
-        surname = user_data['full_name'].split()[1].strip() if len(name_data) > 1 else ''
-        phone_number = user_data['phone_number']
-        ####################################################
-        user.phone_number = phone_number
-        user.first_name = name
-        user.last_name = surname
-        user.save()
         status = update.callback_query.data
-        print(status)
-        pprint(user_data)
         if status == 'Freelancer':
-
             context.user_data['status'] = 'Freelancer'
+            user_data = context.user_data
+            Customer.objects.filter(
+                username=f'{update.effective_user.username}_{chat_id}'
+            ).delete()
+            freelancer, _ = Freelancer.objects.get_or_create(
+                username=f'{update.effective_user.username}_{chat_id}'
+            )
+            name_data = user_data['full_name'].split()
+            name = user_data['full_name'].split()[0].strip()
+            surname = user_data['full_name'].split()[1].strip() if len(name_data) > 1 else ''
+            phone_number = user_data['phone_number']
+            freelancer.username = f'{update.effective_user.username}_{chat_id}'
+            freelancer.phone_number = phone_number
+            freelancer.first_name = name
+            freelancer.last_name = surname
+            freelancer.save()
             show_freelancer_start(context, chat_id)
             pprint(context.user_data)
             return 'HANDLE_FREELANCER'
@@ -139,13 +145,41 @@ def handle_auth(update, context):
 
 
 def handle_customer(update, context):
-    if update.callback_query and update.callback_query.data in ['economic', 'standard', 'vip']:
+    chat_id = update.effective_chat.id
+    user_data = context.user_data
+    if update.callback_query and update.callback_query.data in ['economy', 'base', 'vip']:
         user_reply = update.callback_query.data
-        value = {'economic': 500, 'standard': 1000, 'vip': 3000}
-        total_value = value[user_reply]
+        value = {'economy': 500, 'base': 1000, 'vip': 3000}
+        user_data['total_value'] = value[user_reply]
+        name_data = user_data['full_name'].split()
+        name = user_data['full_name'].split()[0].strip()
+        surname = user_data['full_name'].split()[1].strip() if len(name_data) > 1 else ''
+        phone_number = user_data['phone_number']
+        Freelancer.objects.filter(
+            username=f'{update.effective_user.username}_{chat_id}'
+        ).delete()
+        customer, _ = Customer.objects.get_or_create(
+            username=f'{update.effective_user.username}_{chat_id}',
+        )
+        customer.status = user_reply
+        customer.phone_number = phone_number
+        customer.first_name = name
+        customer.last_name = surname
+        customer.save()
+        show_customer_step(context, chat_id)
+        return 'HANDLE_CUSTOMER'
+    elif update.callback_query and update.callback_query.data == 'show_orders':
+        show_customer_orders(update, context)
+        show_customer_step(context, chat_id)
+        return 'HANDLE_CUSTOMER'
+    elif update.callback_query and update.callback_query.data == 'create_order':
+        return create_order(update, context)
+
+    elif update.callback_query and update.callback_query.data == 'pay':
+        total_value = user_data['total_value']
         context.bot.send_invoice(
-            chat_id=update.effective_chat.id,
-            title='Оплата заказа в pizza-store',
+            chat_id=chat_id,
+            title='Оплата заказа в php_support',
             description='Payment Example using python-telegram-bot',
             payload='Custom-Payload',
             provider_token=os.environ['PROVIDER_TOKEN'],
@@ -169,4 +203,39 @@ def precheckout_callback(update: Update, context: CallbackContext):
     #     text='Хотите продолжить?',
     #     reply_markup=btn.get_restart_button()
     # )
-    return 'HANDLE_CUSTOMER'
+        return 'CREATE_ORDER'
+
+
+def create_order(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    user_data = context.user_data
+    user_data['step_order'] = user_data.get('step_order', 0) + 1
+    step = user_data['step_order']
+    if step == 2:
+        user_data['order_title'] = update.message.text
+    elif step == 3:
+        user_data['order_description'] = update.message.text
+    elif step == 4:
+        user_data['step_order'] = 0
+        customer, _ = Customer.objects.get_or_create(
+            username=f'{update.effective_user.username}_{chat_id}',
+        )
+        order = Order.objects.create(
+            client=customer,
+            title=user_data['order_title'],
+            description=user_data['order_description']
+        )
+        context.bot.send_message(
+            chat_id=chat_id,
+            text='\n'.join(
+                [
+                    f"Название: {user_data['order_title']}",
+                    f"Описание: {user_data['order_description']}"
+                ]
+            )
+        )
+        show_customer_step(context, chat_id)
+        return 'HANDLE_CUSTOMER'
+    show_creating_order_step(context, chat_id, step)
+
+    return 'CREATE_ORDER'
