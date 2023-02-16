@@ -38,7 +38,7 @@ class Customer(User):
     status = models.CharField(
         verbose_name='Статус',
         choices=status_choices,
-        default='not processed',
+        default='no status',
         db_index=True,
         max_length=30,
     )

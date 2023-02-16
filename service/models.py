@@ -10,6 +10,11 @@ class Order(models.Model):
         ('4 completed', 'Выполнен'),
         ('5 expired', 'Просрочен')
     ]
+    title = models.CharField(
+        'Название заказа',
+        max_length=300,
+        blank=True
+    )
     client = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
