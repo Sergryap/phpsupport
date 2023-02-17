@@ -147,9 +147,7 @@ def handle_customer(update, context):
         user_reply = update.callback_query.data
         value = {'economy': 500, 'base': 1000, 'vip': 3000}
         user_data['total_value'] = value[user_reply]
-        name_data = user_data['full_name'].split()
-        name = user_data['full_name'].split()[0].strip()
-        surname = user_data['full_name'].split()[1].strip() if len(name_data) > 1 else ''
+
         phone_number = user_data['phone_number']
         Freelancer.objects.filter(
             username=f'{update.effective_user.username}_{chat_id}'
@@ -159,8 +157,8 @@ def handle_customer(update, context):
         )
         customer.status = user_reply
         customer.phone_number = phone_number
-        customer.first_name = name
-        customer.last_name = surname
+        customer.first_name = update.effective_user.first_name
+        customer.last_name = update.effective_user.last_name
         customer.save()
         show_customer_step(context, chat_id)
         return 'HANDLE_CUSTOMER'
