@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заказы</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous"> 
+<body>
+<div class="container">
+    <table class="table table-responsive">
+        <tr>
+            <th>ID заказа</th>
+            <th>Название заказа</th>
+            <th>Заказчик</th>
+            <th>Фрилансер</th>
+            <th>Статус заказа</th>
+            <th>Заказ создан</th>
+            <th>Дедлайн</th>
+        </tr>
+        {% for order in processed_orders%}
+        <tr>
+            <td>{{order.id}}</td>
+            <td>{{order.title}}</td>
+            <td>{{order.customer}}</td>
+            <td>{{order.freelancer}}</td>
+            <td>{{order.status}}</td>
+            <td>{{order.created_at}}</td>
+            <td>{{order.deadline}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+</body>
+</html>
