@@ -26,7 +26,8 @@ from service.tg_lib import (
     show_customer_start,
     show_creating_order_step,
     show_customer_step,
-    show_customer_orders
+    show_customer_orders,
+    show_freelancers,
 )
 from pprint import pprint
 
@@ -172,7 +173,22 @@ def handle_customer(update, context):
         return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'create_order':
         return create_order(update, context)
-
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'tg_id':
+        freelancer_telegram_id = update.callback_query.data.split(':')[1]
+        user_data = context.user_data
+        user_data['freelancer_telegram_id'] = freelancer_telegram_id
+        text = 'Введите сообщение для отправки фрилансеру'
+        context.bot.send_message(chat_id=chat_id, text=text)
+        return 'HANDLE_CUSTOMER'
+    elif user_data.get('freelancer_telegram_id'):
+        user_data = context.user_data
+        message = update.message.text
+        context.bot.send_message(chat_id=user_data['freelancer_telegram_id'], text=message)
+        text = 'Ваше сообщение отправлено'
+        context.bot.send_message(chat_id=chat_id, text=text)
+        show_customer_step(context, chat_id)
+        del user_data['freelancer_telegram_id']
+        return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'pay':
         total_value = user_data['total_value']
         context.bot.send_invoice(
@@ -214,24 +230,29 @@ def create_order(update: Update, context: CallbackContext):
     elif step == 3:
         user_data['order_description'] = update.message.text
     elif step == 4:
+        if update.callback_query and update.callback_query.data == 'freelancer':
+            show_freelancers(context, chat_id)
+            return 'CREATE_ORDER'
+    elif step == 5:
         user_data['step_order'] = 0
         customer, _ = Customer.objects.get_or_create(
             username=f'{update.effective_user.username}_{chat_id}',
         )
-        order = Order.objects.create(
-            client=customer,
-            title=user_data['order_title'],
-            description=user_data['order_description']
-        )
-        context.bot.send_message(
-            chat_id=chat_id,
-            text='\n'.join(
-                [
-                    f"Название: {user_data['order_title']}",
-                    f"Описание: {user_data['order_description']}"
-                ]
+        if update.callback_query and update.callback_query.data != 'break':
+            freelancer = Freelancer.objects.get(telegram_id=update.callback_query.data)
+            Order.objects.create(
+                client=customer,
+                status='2 selected',
+                freelancer=freelancer,
+                title=user_data['order_title'],
+                description=user_data['order_description']
             )
-        )
+        else:
+            Order.objects.create(
+                client=customer,
+                title=user_data['order_title'],
+                description=user_data['order_description']
+            )
         show_customer_step(context, chat_id)
         return 'HANDLE_CUSTOMER'
     show_creating_order_step(context, chat_id, step)
