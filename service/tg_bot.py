@@ -103,7 +103,7 @@ def handle_auth(update, context):
             freelancer.phone_number = user_data['phone_number']
             freelancer.first_name = update.effective_user.first_name 
             freelancer.last_name = update.effective_user.last_name
-            freelancer.telegram_id = chat_id
+            freelancer.telegram_id = update.effective_user.id
             freelancer.save()
             show_freelancer_start(context, chat_id)
             return 'HANDLE_FREELANCER'
@@ -159,6 +159,7 @@ def handle_customer(update, context):
         customer.phone_number = phone_number
         customer.first_name = update.effective_user.first_name
         customer.last_name = update.effective_user.last_name
+        customer.telegram_id = update.effective_user.id
         customer.save()
         show_customer_step(context, chat_id)
         return 'HANDLE_CUSTOMER'
