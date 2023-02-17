@@ -98,10 +98,13 @@ def handle_auth(update, context):
             freelancer, _ = Freelancer.objects.get_or_create(
                 username=f'{update.effective_user.username}_{chat_id}',
             )
+            name_data = user_data['full_name'].split()
+            first_name = name_data[0].strip()
+            last_name = name_data[1].strip() if len(name_data) > 1 else 'Нет данных'
             freelancer.username = f'{update.effective_user.username}_{chat_id}'
             freelancer.phone_number = user_data['phone_number']
-            freelancer.first_name = update.effective_user.first_name 
-            freelancer.last_name = update.effective_user.last_name
+            freelancer.first_name = first_name
+            freelancer.last_name = last_name
             freelancer.telegram_id = update.effective_user.id
             freelancer.save()
             show_freelancer_start(context, chat_id)
@@ -135,7 +138,7 @@ def handle_auth(update, context):
             return 'HANDLE_AUTH'
         else:
             show_auth_user_type(context, chat_id)
-            context.user_data['phone_number'] = update.message.text
+            context.user_data['full_name'] = update.message.text
             return 'HANDLE_AUTH'
 
 
@@ -146,18 +149,19 @@ def handle_customer(update, context):
         user_reply = update.callback_query.data
         value = {'economy': 500, 'base': 1000, 'vip': 3000}
         user_data['total_value'] = value[user_reply]
-
-        phone_number = user_data['phone_number']
         Freelancer.objects.filter(
             username=f'{update.effective_user.username}_{chat_id}'
         ).delete()
         customer, _ = Customer.objects.get_or_create(
             username=f'{update.effective_user.username}_{chat_id}',
         )
+        name_data = user_data['full_name'].split()
+        first_name = user_data['full_name'].split()[0].strip()
+        last_name = user_data['full_name'].split()[1].strip() if len(name_data) > 1 else 'Нет данных'
         customer.status = user_reply
-        customer.phone_number = phone_number
-        customer.first_name = update.effective_user.first_name
-        customer.last_name = update.effective_user.last_name
+        customer.phone_number = user_data['phone_number']
+        customer.first_name = first_name
+        customer.last_name = last_name
         customer.telegram_id = update.effective_user.id
         customer.save()
         show_customer_step(context, chat_id)
