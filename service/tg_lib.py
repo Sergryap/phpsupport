@@ -147,9 +147,20 @@ def show_customer_orders(update, context):
         if status == '33' or status == '1 not processed':
             freelancer = 'Не выбран'
             callback_data = 'empty_telegramm_id'
+            reply_markup = None
         else:
             freelancer = f'{order.freelancer.first_name}'
-            callback_data = f"tg_id:{order.freelancer.telegram_id}"
+            reply_markup = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            'Написать фрилансеру',
+                            callback_data=f"tg_id:{order.freelancer.telegram_id}"
+                        )
+                    ]
+                ],
+                resize_keyboard=True
+            )
 
         context.bot.send_message(
             chat_id=chat_id,
@@ -160,15 +171,7 @@ def show_customer_orders(update, context):
                     f"Фрилансер: {freelancer}"
                 ],
             ),
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [InlineKeyboardButton(
-                        'Написать фрилансеру',
-                        callback_data=callback_data
-                    )]
-                ],
-                resize_keyboard=True
-            )
+            reply_markup=reply_markup
         )
 
 
