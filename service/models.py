@@ -4,7 +4,7 @@ from users.models import Customer, Freelancer
 
 class Order(models.Model):
     status_choices = [
-        ('1 not processed', 'Необработан'),
+        ('33', 'Необработан'),
         ('2 selected', 'Выбран фрилансер'),
         ('3 performed', 'В работе'),
         ('4 completed', 'Выполнен'),

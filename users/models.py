@@ -4,6 +4,17 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.core.validators import MaxValueValidator
 
 
+class BotState(models.Model):
+    telegram_id = models.IntegerField(
+        'Telegram Id',
+    )
+    bot_state = models.CharField(
+        'Текущее состояние бота',
+        max_length=100,
+        help_text="Стейт-машина бота"
+    )
+
+
 class User(AbstractUser):
     telegram_id = models.IntegerField(
         'Telegram Id',

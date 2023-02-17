@@ -16,7 +16,7 @@ from telegram.ext import (
     )
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
-from users.models import User, Freelancer, Customer
+from users.models import User, Freelancer, Customer, BotState
 from service.models import Order
 from service.tg_lib import (
     show_auth_keyboard,
@@ -34,8 +34,8 @@ from pprint import pprint
 def get_user(func):
     def wrapper(update, context):
         chat_id = update.effective_chat.id
-        user, _ = User.objects.get_or_create(telegram_id=chat_id)
-        context.user_data['user'] = user
+        bot_state, _ = BotState.objects.get_or_create(telegram_id=chat_id)
+        context.user_data['bot_state'] = bot_state
         return func(update, context)
     return wrapper
 
@@ -53,7 +53,7 @@ class TgDialogBot:
         )
 
     def handle_users_reply(self, update, context):
-        user = context.user_data['user']
+        bot_state = context.user_data['bot_state']
         if update.message:
             user_reply = update.message.text
             chat_id = update.message.chat_id
@@ -70,13 +70,13 @@ class TgDialogBot:
             user_state = 'START'
             context.user_data.update({'chat_id': chat_id, 'full_name': '', 'phone_number': ''})
         else:
-            user_state = user.bot_state
+            user_state = bot_state.bot_state
             user_state = user_state if user_state else 'HANDLE_AUTH'
 
         state_handler = self.states_functions[user_state]
         next_state = state_handler(update, context)
-        user.bot_state = next_state
-        user.save()
+        bot_state.bot_state = next_state
+        bot_state.save()
 
 
 def start(update, context):
@@ -86,7 +86,6 @@ def start(update, context):
 
 
 def handle_auth(update, context):
-    user = context.user_data['user']
     chat_id = update.effective_chat.id
     if update.callback_query:
         status = update.callback_query.data
