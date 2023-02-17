@@ -97,19 +97,15 @@ def handle_auth(update, context):
                 username=f'{update.effective_user.username}_{chat_id}'
             ).delete()
             freelancer, _ = Freelancer.objects.get_or_create(
-                username=f'{update.effective_user.username}_{chat_id}'
+                username=f'{update.effective_user.username}_{chat_id}',
             )
-            name_data = user_data['full_name'].split()
-            name = user_data['full_name'].split()[0].strip()
-            surname = user_data['full_name'].split()[1].strip() if len(name_data) > 1 else ''
-            phone_number = user_data['phone_number']
             freelancer.username = f'{update.effective_user.username}_{chat_id}'
-            freelancer.phone_number = phone_number
-            freelancer.first_name = name
-            freelancer.last_name = surname
+            freelancer.phone_number = user_data['phone_number']
+            freelancer.first_name = update.effective_user.first_name 
+            freelancer.last_name = update.effective_user.last_name
+            freelancer.telegram_id = chat_id
             freelancer.save()
             show_freelancer_start(context, chat_id)
-            pprint(context.user_data)
             return 'HANDLE_FREELANCER'
         elif status == 'Customer':
             context.user_data['status'] = 'Customer'
@@ -140,7 +136,7 @@ def handle_auth(update, context):
             return 'HANDLE_AUTH'
         else:
             show_auth_user_type(context, chat_id)
-            context.user_data['full_name'] = update.message.text
+            context.user_data['phone_number'] = update.message.text
             return 'HANDLE_AUTH'
 
 
