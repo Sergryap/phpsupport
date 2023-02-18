@@ -67,7 +67,7 @@ def show_freelancer_orders(context, chat_id, freelancer_orders=False):
         orders = Order.objects.filter(Q(status='33') | Q(status='1 not processed'))
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton('Вернуться назад', callback_data='break')]] + [
-            [InlineKeyboardButton(order.title, callback_data=order.pk)] for order in orders
+            [InlineKeyboardButton(order.title, callback_data=f'detail:{order.pk}')] for order in orders
         ],
         resize_keyboard=True
     )
@@ -87,7 +87,7 @@ def show_order_detail(context, chat_id, order_pk, button=True):
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton('Вернуться назад', callback_data='break')],
-                [InlineKeyboardButton('Выбрать для себя', callback_data=order_pk)]
+                [InlineKeyboardButton('Выбрать для себя', callback_data=f'choice:{order_pk}')]
             ],
             resize_keyboard=True
         )
@@ -214,5 +214,13 @@ def show_freelancers(context, chat_id):
     )
     text = 'Выберите исполнителя для подробной информации, либо пропустите'
     context.bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
+
+
+def send_freelancer_message(context, message, freelancer_telegram_id, chat_id):
+    reply_markup = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton('Ответить заказчику', callback_data=chat_id)]],
+        resize_keyboard=True
+    )
+
 
 

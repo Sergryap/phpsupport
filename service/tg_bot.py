@@ -149,28 +149,37 @@ def handle_freelancer(update, context):
     chat_id = update.effective_chat.id
     user_data = context.user_data
     if update.callback_query and update.callback_query.data == 'free_orders':
-        user_data['freelancer_order_detail'] = True
         show_freelancer_orders(context, chat_id)
     elif update.callback_query and update.callback_query.data == 'my_orders':
         show_freelancer_orders(context, chat_id, freelancer_orders=True)
-    elif user_data.get('freelancer_order_detail'):
-        if update.callback_query and update.callback_query.data != 'break':
-            order_pk = update.callback_query.data
-            show_order_detail(context, chat_id, order_pk)
-            del user_data['freelancer_order_detail']
-            user_data['freelancer_order_choice'] = True
-        else:
-            show_freelancer_menu(context, chat_id)
-    elif user_data.get('freelancer_order_choice'):
-        if update.callback_query and update.callback_query.data != 'break':
-            order_pk = update.callback_query.data
-            order = Order.objects.get(pk=order_pk)
-            freelancer = Freelancer.objects.get(telegram_id=chat_id)
-            order.freelancer = freelancer
-            order.status = '2 selected'
-            order.save()
-            del user_data['freelancer_order_choice']
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'detail':
+        order_pk = update.callback_query.data.split(':')[1]
+        show_order_detail(context, chat_id, order_pk)
+    elif update.callback_query and update.callback_query.data == 'break':
         show_freelancer_menu(context, chat_id)
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'choice':
+        order_pk = update.callback_query.data.split(':')[1]
+        order = Order.objects.get(pk=order_pk)
+        freelancer = Freelancer.objects.get(telegram_id=chat_id)
+        order.freelancer = freelancer
+        order.status = '2 selected'
+        order.save()
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'answer':
+        user_data['customer_telegram_id'] = update.callback_query.data.split(':')[1]
+        text = 'Введите сообщение для отправки заказчику'
+        context.bot.send_message(chat_id, text=text)
+    elif user_data.get('customer_telegram_id'):
+        user_data = context.user_data
+        message = update.message.text
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton('Ответить фрилансеру', callback_data=f'answer:{chat_id}')]],
+            resize_keyboard=True
+        )
+        context.bot.send_message(chat_id=user_data['customer_telegram_id'], text=message, reply_markup=reply_markup)
+        text = 'Ваше сообщение отправлено'
+        context.bot.send_message(chat_id=chat_id, text=text)
+        show_freelancer_menu(context, chat_id)
+        del user_data['customer_telegram_id']
 
     return 'HANDLE_FREELANCER'
 
@@ -208,7 +217,7 @@ def handle_customer(update, context):
         step = user_data['step_order']
         show_creating_order_step(context, chat_id, step)
         return 'CREATE_ORDER'
-    elif update.callback_query and update.callback_query.data.split(':')[0] == 'tg_id':
+    elif update.callback_query and update.callback_query.data.split(':')[0] in ['tg_id', 'answer']:
         freelancer_telegram_id = update.callback_query.data.split(':')[1]
         user_data = context.user_data
         user_data['freelancer_telegram_id'] = freelancer_telegram_id
@@ -218,7 +227,11 @@ def handle_customer(update, context):
     elif user_data.get('freelancer_telegram_id'):
         user_data = context.user_data
         message = update.message.text
-        context.bot.send_message(chat_id=user_data['freelancer_telegram_id'], text=message)
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton('Ответить заказчику', callback_data=f'answer:{chat_id}')]],
+            resize_keyboard=True
+        )
+        context.bot.send_message(chat_id=user_data['freelancer_telegram_id'], text=message, reply_markup=reply_markup)
         text = 'Ваше сообщение отправлено'
         context.bot.send_message(chat_id=chat_id, text=text)
         show_customer_step(context, chat_id)
