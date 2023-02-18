@@ -291,12 +291,17 @@ def handle_customer(update, context):
             user_data['callback_previous'] == 'pay'
     ):
         del user_data['callback_previous']
-        value = {'economy': 500, 'base': 1000, 'vip': 3000}
+        value = {'no status': 0, 'economy': 500, 'base': 1000, 'vip': 3000}
         status = update.callback_query.data
         customer = Customer.objects.get(telegram_id=chat_id)
+        current_status = customer.status
         customer.status = status
         customer.save()
-        total_value = value[status]
+        total_value = value[status] - value[current_status]
+        if total_value <= 0:
+            context.bot.send_message(chat_id=chat_id, text=f'Ваш текущий тариф {current_status}. Оплата не требуется')
+            show_customer_step(context, chat_id)
+            return 'HANDLE_CUSTOMER'
         context.bot.send_invoice(
             chat_id=update.effective_user.id,
             title='Оплата заказа в php_support',
