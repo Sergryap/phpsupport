@@ -169,6 +169,8 @@ def handle_freelancer(update, context):
         order.freelancer = freelancer
         order.status = '2 selected'
         order.save()
+        context.bot.send_message(chat_id, text=f'Вы назначены исполнителем по заказу "{order.title}"')
+        show_freelancer_menu(context, chat_id)
     elif update.callback_query and update.callback_query.data.split(':')[0] == 'answer':
         user_data['customer_telegram_id'] = update.callback_query.data.split(':')[1]
         order_pk = update.callback_query.data.split(':')[2]
@@ -299,12 +301,12 @@ def handle_customer(update, context):
         customer.save()
         total_value = value[status] - value[current_status]
         if total_value <= 0:
-            context.bot.send_message(chat_id=chat_id, text=f'Ваш текущий тариф {current_status}. Оплата не требуется')
+            context.bot.send_message(chat_id=chat_id, text=f'Ваш текущий тариф "{current_status}". Оплата не требуется')
             show_customer_step(context, chat_id)
             return 'HANDLE_CUSTOMER'
         context.bot.send_invoice(
             chat_id=update.effective_user.id,
-            title='Оплата заказа в php_support',
+            title=f'Оплата за тариф "{status.upper()}" в phpsupport',
             description='Payment Example using python-telegram-bot',
             payload='Custom-Payload',
             provider_token=os.environ['PROVIDER_TOKEN'],
