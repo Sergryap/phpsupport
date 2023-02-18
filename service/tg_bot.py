@@ -9,6 +9,7 @@ from telegram.ext import (
     Updater,
     Filters,
     CallbackQueryHandler,
+    PreCheckoutQueryHandler,
     PollAnswerHandler,
     CommandHandler,
     CallbackContext,
@@ -36,7 +37,7 @@ from pprint import pprint
 
 def get_user(func):
     def wrapper(update, context):
-        chat_id = update.effective_chat.id
+        chat_id = update.effective_user.id
         bot_state, _ = BotState.objects.get_or_create(telegram_id=chat_id)
         context.user_data['bot_state'] = bot_state
         return func(update, context)
@@ -49,6 +50,7 @@ class TgDialogBot:
         self.tg_token = tg_token
         self.states_functions = states_functions
         self.updater = Updater(token=tg_token, use_context=True)
+        self.updater.dispatcher.add_handler(PreCheckoutQueryHandler(get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(CommandHandler('start', get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(CallbackQueryHandler(get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(
@@ -66,6 +68,9 @@ class TgDialogBot:
         elif update.poll_answer:
             user_reply = update.poll_answer.option_ids
             chat_id = update.poll_answer.user.id
+        elif update.pre_checkout_query:
+            user_reply = ''
+            chat_id = update.effective_user.id
         else:
             return
 
@@ -261,9 +266,12 @@ def handle_customer(update, context):
         del user_data['message_for_order']
         return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'pay':
-        total_value = user_data['total_value']
+        value = {'economy': 500, 'base': 1000, 'vip': 3000}
+        customer = Customer.objects.get(telegram_id=chat_id)
+        status = customer.status
+        total_value = value[status]
         context.bot.send_invoice(
-            chat_id=chat_id,
+            chat_id=update.effective_user.id,
             title='Оплата заказа в php_support',
             description='Payment Example using python-telegram-bot',
             payload='Custom-Payload',
@@ -276,6 +284,7 @@ def handle_customer(update, context):
 
 def precheckout_callback(update: Update, context: CallbackContext):
     query = update.pre_checkout_query
+    chat_id = update.effective_user.id
     if query.invoice_payload != 'Custom-Payload':
         context.bot.answer_pre_checkout_query(
             pre_checkout_query_id=query.id,
@@ -283,12 +292,8 @@ def precheckout_callback(update: Update, context: CallbackContext):
             error_message="Something went wrong...")
     else:
         context.bot.answer_pre_checkout_query(pre_checkout_query_id=query.id, ok=True)
-    # context.bot.send_message(
-    #     chat_id=update.effective_user.id,
-    #     text='Хотите продолжить?',
-    #     reply_markup=btn.get_restart_button()
-    # )
-        return 'CREATE_ORDER'
+        show_customer_step(context, chat_id)
+        return 'HANDLE_CUSTOMER'
 
 
 def create_order(update: Update, context: CallbackContext):
