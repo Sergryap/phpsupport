@@ -198,15 +198,25 @@ def show_customer_orders(update, context):
                     Фрилансер: {freelancer}
                     '''
                 )
-            reply_markup = InlineKeyboardMarkup(
-                inline_keyboard=[
+            inline_keyboard = [
+                [
+                    InlineKeyboardButton(
+                        'Написать фрилансеру',
+                        callback_data=f"tg_id:{order.freelancer.telegram_id}:{order.pk}"
+                    )
+                ]
+            ]
+            if customer.status == 'vip':
+                inline_keyboard.append(
                     [
                         InlineKeyboardButton(
-                            'Написать фрилансеру',
-                            callback_data=f"tg_id:{order.freelancer.telegram_id}:{order.pk}"
+                            'Переписка по заказу',
+                            callback_data=f"messages:{order.pk}"
                         )
                     ]
-                ],
+                )
+            reply_markup = InlineKeyboardMarkup(
+                inline_keyboard=inline_keyboard,
                 resize_keyboard=True
             )
 

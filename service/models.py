@@ -51,6 +51,12 @@ class Order(models.Model):
         null=True,
         blank=True
     )
+    messages = models.TextField(
+        verbose_name='Переписка по заказу',
+        default=f'Переписка по заказу',
+        null=True,
+        blank=True
+    )
 
     class Meta:
         verbose_name = 'заказ'

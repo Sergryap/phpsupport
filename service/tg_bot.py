@@ -189,8 +189,12 @@ def handle_freelancer(update, context):
             Сообщение: "{message}"
             '''
         )
+        order.messages += f'\nФрилансер: "{message}"'
+        order.save()
         reply_markup = InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton('Ответить фрилансеру', callback_data=f'answer:{chat_id}:{order_pk}')]],
+            inline_keyboard=[
+                [InlineKeyboardButton('Ответить фрилансеру', callback_data=f'answer:{chat_id}:{order_pk}')]
+            ],
             resize_keyboard=True
         )
         context.bot.send_message(chat_id=user_data['customer_telegram_id'], text=text, reply_markup=reply_markup)
@@ -245,6 +249,13 @@ def handle_customer(update, context):
         show_customer_orders(update, context)
         show_customer_step(context, chat_id)
         return 'HANDLE_CUSTOMER'
+    elif update.callback_query and update.callback_query.data.split(':')[0] == 'messages':
+        order_pk = update.callback_query.data.split(':')[1]
+        order = Order.objects.get(pk=order_pk)
+        messages = order.messages
+        context.bot.send_message(chat_id=chat_id, text=messages)
+        show_customer_step(context, chat_id)
+        return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'create_order':
         user_data['step_order'] = user_data.get('step_order', 0) + 1
         step = user_data['step_order']
@@ -270,6 +281,8 @@ def handle_customer(update, context):
             Сообщение: "{message}"
             '''
         )
+        order.messages += f'\nЗаказчик: "{message}"'
+        order.save()
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton('Ответить заказчику', callback_data=f'answer:{chat_id}:{order_pk}')]
