@@ -166,20 +166,32 @@ def handle_freelancer(update, context):
         order.save()
     elif update.callback_query and update.callback_query.data.split(':')[0] == 'answer':
         user_data['customer_telegram_id'] = update.callback_query.data.split(':')[1]
+        order_pk = update.callback_query.data.split(':')[2]
+        user_data['message_for_order'] = order_pk
         text = 'Введите сообщение для отправки заказчику'
         context.bot.send_message(chat_id, text=text)
     elif user_data.get('customer_telegram_id'):
         user_data = context.user_data
         message = update.message.text
+        order_pk = user_data['message_for_order']
+        order = Order.objects.get(pk=order_pk)
+        text = textwrap.dedent(
+            f'''
+            Сообщение от фрилансера по заказу №{order_pk}
+            Название: {order.title}
+            Сообщение: "{message}"
+            '''
+        )
         reply_markup = InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton('Ответить фрилансеру', callback_data=f'answer:{chat_id}')]],
+            inline_keyboard=[[InlineKeyboardButton('Ответить фрилансеру', callback_data=f'answer:{chat_id}:{order_pk}')]],
             resize_keyboard=True
         )
-        context.bot.send_message(chat_id=user_data['customer_telegram_id'], text=message, reply_markup=reply_markup)
+        context.bot.send_message(chat_id=user_data['customer_telegram_id'], text=text, reply_markup=reply_markup)
         text = 'Ваше сообщение отправлено'
         context.bot.send_message(chat_id=chat_id, text=text)
         show_freelancer_menu(context, chat_id)
         del user_data['customer_telegram_id']
+        del user_data['message_for_order']
 
     return 'HANDLE_FREELANCER'
 
@@ -219,23 +231,34 @@ def handle_customer(update, context):
         return 'CREATE_ORDER'
     elif update.callback_query and update.callback_query.data.split(':')[0] in ['tg_id', 'answer']:
         freelancer_telegram_id = update.callback_query.data.split(':')[1]
-        user_data = context.user_data
+        order_pk = update.callback_query.data.split(':')[2]
         user_data['freelancer_telegram_id'] = freelancer_telegram_id
+        user_data['message_for_order'] = order_pk
         text = 'Введите сообщение для отправки фрилансеру'
         context.bot.send_message(chat_id=chat_id, text=text)
         return 'HANDLE_CUSTOMER'
     elif user_data.get('freelancer_telegram_id'):
         user_data = context.user_data
         message = update.message.text
+        order_pk = user_data['message_for_order']
+        order = Order.objects.get(pk=order_pk)
+        text = textwrap.dedent(
+            f'''
+            Сообщение от заказчика по заказу №{order_pk}
+            Название: {order.title}
+            Сообщение: "{message}"
+            '''
+        )
         reply_markup = InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton('Ответить заказчику', callback_data=f'answer:{chat_id}')]],
+            inline_keyboard=[[InlineKeyboardButton('Ответить заказчику', callback_data=f'answer:{chat_id}:{order_pk}')]],
             resize_keyboard=True
         )
-        context.bot.send_message(chat_id=user_data['freelancer_telegram_id'], text=message, reply_markup=reply_markup)
+        context.bot.send_message(chat_id=user_data['freelancer_telegram_id'], text=text, reply_markup=reply_markup)
         text = 'Ваше сообщение отправлено'
         context.bot.send_message(chat_id=chat_id, text=text)
         show_customer_step(context, chat_id)
         del user_data['freelancer_telegram_id']
+        del user_data['message_for_order']
         return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'pay':
         total_value = user_data['total_value']

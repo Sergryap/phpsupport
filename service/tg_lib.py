@@ -169,7 +169,7 @@ def show_customer_orders(update, context):
     for order in orders:
         status = order.status
         if status == '33' or status == '1 not processed':
-            freelancer = 'Не выбран'
+            freelancer = 'Не назначен'
             callback_data = 'empty_telegramm_id'
             reply_markup = None
         else:
@@ -179,7 +179,7 @@ def show_customer_orders(update, context):
                     [
                         InlineKeyboardButton(
                             'Написать фрилансеру',
-                            callback_data=f"tg_id:{order.freelancer.telegram_id}"
+                            callback_data=f"tg_id:{order.freelancer.telegram_id}:{order.pk}"
                         )
                     ]
                 ],
