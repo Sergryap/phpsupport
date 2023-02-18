@@ -204,7 +204,12 @@ def handle_freelancer(update, context):
 def handle_customer(update, context):
     chat_id = update.effective_chat.id
     user_data = context.user_data
-    if update.callback_query and update.callback_query.data in ['economy', 'base', 'vip']:
+    customer = Customer.objects.filter(username=f'{update.effective_user.username}_{chat_id}')
+    if (
+            update.callback_query and
+            update.callback_query.data in ['economy', 'base', 'vip'] and
+            user_data.get('callback_previous') != 'pay'
+    ):
         user_reply = update.callback_query.data
         value = {'economy': 500, 'base': 1000, 'vip': 3000}
         user_data['total_value'] = value[user_reply]
@@ -223,6 +228,15 @@ def handle_customer(update, context):
         customer.last_name = last_name
         customer.telegram_id = update.effective_user.id
         customer.save()
+        show_customer_step(context, chat_id)
+        return 'HANDLE_CUSTOMER'
+    elif (
+            customer and not customer[0].payment_status and
+            update.callback_query.data != 'pay' and
+            update.callback_query.data not in ['economy', 'base', 'vip']
+    ):
+        message = 'Чтобы продолжить оплатите тариф'
+        context.bot.send_message(chat_id=chat_id, text=message)
         show_customer_step(context, chat_id)
         return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'show_orders':
@@ -255,7 +269,9 @@ def handle_customer(update, context):
             '''
         )
         reply_markup = InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton('Ответить заказчику', callback_data=f'answer:{chat_id}:{order_pk}')]],
+            inline_keyboard=[
+                [InlineKeyboardButton('Ответить заказчику', callback_data=f'answer:{chat_id}:{order_pk}')]
+            ],
             resize_keyboard=True
         )
         context.bot.send_message(chat_id=user_data['freelancer_telegram_id'], text=text, reply_markup=reply_markup)
@@ -266,9 +282,20 @@ def handle_customer(update, context):
         del user_data['message_for_order']
         return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'pay':
+        show_customer_start(context, chat_id)
+        user_data['callback_previous'] = 'pay'
+        return 'HANDLE_CUSTOMER'
+    elif (
+            update.callback_query and
+            update.callback_query.data in ['economy', 'base', 'vip'] and
+            user_data['callback_previous'] == 'pay'
+    ):
+        del user_data['callback_previous']
         value = {'economy': 500, 'base': 1000, 'vip': 3000}
+        status = update.callback_query.data
         customer = Customer.objects.get(telegram_id=chat_id)
-        status = customer.status
+        customer.status = status
+        customer.save()
         total_value = value[status]
         context.bot.send_invoice(
             chat_id=update.effective_user.id,
@@ -285,6 +312,7 @@ def handle_customer(update, context):
 def precheckout_callback(update: Update, context: CallbackContext):
     query = update.pre_checkout_query
     chat_id = update.effective_user.id
+    customer = Customer.objects.get(username=f'{update.effective_user.username}_{chat_id}')
     if query.invoice_payload != 'Custom-Payload':
         context.bot.answer_pre_checkout_query(
             pre_checkout_query_id=query.id,
@@ -293,7 +321,10 @@ def precheckout_callback(update: Update, context: CallbackContext):
     else:
         context.bot.answer_pre_checkout_query(pre_checkout_query_id=query.id, ok=True)
         show_customer_step(context, chat_id)
-        return 'HANDLE_CUSTOMER'
+        customer.payment_status = True
+        customer.save()
+
+    return 'HANDLE_CUSTOMER'
 
 
 def create_order(update: Update, context: CallbackContext):

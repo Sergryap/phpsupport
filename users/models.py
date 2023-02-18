@@ -53,6 +53,10 @@ class Customer(User):
         db_index=True,
         max_length=30,
     )
+    payment_status = models.BooleanField(
+        verbose_name='Статус оплаты',
+        default=False
+    )
 
     class Meta:
         verbose_name = 'Заказчик'

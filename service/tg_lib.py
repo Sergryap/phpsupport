@@ -109,13 +109,13 @@ def show_freelancer_menu(context, chat_id):
 
 
 def show_customer_start(context, chat_id):
-    message = 'Выберите тариф:'
+    message = 'Выберите либо уточните тариф:'
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton('Эконом', callback_data='economy'),
-                InlineKeyboardButton('Стандарт', callback_data='base'),
-                InlineKeyboardButton('VIP', callback_data='vip'),
+                InlineKeyboardButton('Эконом - 500 р.', callback_data='economy'),
+                InlineKeyboardButton('Стандарт - 1000 р.', callback_data='base'),
+                InlineKeyboardButton('VIP - 3000 р.', callback_data='vip'),
             ]
         ],
         resize_keyboard=True
@@ -165,6 +165,7 @@ def show_customer_orders(update, context):
     customer, _ = Customer.objects.get_or_create(
         username=f'{update.effective_user.username}_{chat_id}',
     )
+
     orders = Order.objects.filter(client=customer)
     for order in orders:
         status = order.status
@@ -172,8 +173,31 @@ def show_customer_orders(update, context):
             freelancer = 'Не назначен'
             callback_data = 'empty_telegramm_id'
             reply_markup = None
+            text = textwrap.dedent(
+                f'''
+                Название: {order.title},
+                Описание: {order.description}
+                '''
+            )
         else:
             freelancer = f'{order.freelancer.first_name}'
+            if customer.status == 'vip':
+                text = textwrap.dedent(
+                    f'''
+                    Название: {order.title},
+                    Описание: {order.description},
+                    Фрилансер: {freelancer}
+                    Телефон фрилансера: {order.freelancer.phone_number}
+                    '''
+                )
+            else:
+                text = textwrap.dedent(
+                    f'''
+                    Название: {order.title},
+                    Описание: {order.description},
+                    Фрилансер: {freelancer}
+                    '''
+                )
             reply_markup = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
@@ -188,13 +212,7 @@ def show_customer_orders(update, context):
 
         context.bot.send_message(
             chat_id=chat_id,
-            text='\n'.join(
-                [
-                    f"Название: {order.title}",
-                    f"Описание: {order.description}",
-                    f"Фрилансер: {freelancer}"
-                ],
-            ),
+            text=text,
             reply_markup=reply_markup
         )
 
