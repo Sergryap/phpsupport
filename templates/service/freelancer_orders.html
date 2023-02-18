@@ -1,0 +1,14 @@
+{% extends 'service/base.html' %}
+{% load static%}
+{% block content %}
+<ul class="list-group text-center">
+  {% for freelancer_order in freelancer_orders%}
+    <li class="list-group-item">Никнейм фрилансера - {{freelancer_order.username}} | 
+      Количество заказов в работе - {{freelancer_order.orders}} | 
+      Номер телефона - {{freelancer_order.phone_number}} | 
+      Рейтинг - {{freelancer_order.rating}}
+    </li>
+    <hr>
+  {% endfor %}
+</ul>
+{% endblock %}
