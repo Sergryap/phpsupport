@@ -37,7 +37,7 @@ from pprint import pprint
 
 def get_user(func):
     def wrapper(update, context):
-        chat_id = update.effective_user.id
+        chat_id = update.effective_chat.id if update.effective_chat else update.effective_user.id
         bot_state, _ = BotState.objects.get_or_create(telegram_id=chat_id)
         context.user_data['bot_state'] = bot_state
         return func(update, context)
