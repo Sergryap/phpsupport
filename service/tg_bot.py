@@ -204,7 +204,10 @@ def handle_customer(update, context):
         show_customer_step(context, chat_id)
         return 'HANDLE_CUSTOMER'
     elif update.callback_query and update.callback_query.data == 'create_order':
-        return create_order(update, context)
+        user_data['step_order'] = user_data.get('step_order', 0) + 1
+        step = user_data['step_order']
+        show_creating_order_step(context, chat_id, step)
+        return 'CREATE_ORDER'
     elif update.callback_query and update.callback_query.data.split(':')[0] == 'tg_id':
         freelancer_telegram_id = update.callback_query.data.split(':')[1]
         user_data = context.user_data
@@ -262,29 +265,17 @@ def create_order(update: Update, context: CallbackContext):
     elif step == 3:
         user_data['order_description'] = update.message.text
     elif step == 4:
-        if update.callback_query and update.callback_query.data == 'freelancer':
-            show_freelancers(context, chat_id)
-            return 'CREATE_ORDER'
-    elif step == 5:
-        user_data['step_order'] = 0
+        del user_data['step_order']
         customer, _ = Customer.objects.get_or_create(
             username=f'{update.effective_user.username}_{chat_id}',
         )
         if update.callback_query and update.callback_query.data != 'break':
-            freelancer = Freelancer.objects.get(telegram_id=update.callback_query.data)
-            Order.objects.create(
-                client=customer,
-                status='2 selected',
-                freelancer=freelancer,
-                title=user_data['order_title'],
-                description=user_data['order_description']
-            )
-        else:
-            Order.objects.create(
+            order = Order.objects.create(
                 client=customer,
                 title=user_data['order_title'],
                 description=user_data['order_description']
             )
+            show_order_detail(context, chat_id, order.pk, button=False)
         show_customer_step(context, chat_id)
         return 'HANDLE_CUSTOMER'
     show_creating_order_step(context, chat_id, step)

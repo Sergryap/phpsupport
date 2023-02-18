@@ -74,7 +74,7 @@ def show_freelancer_orders(context, chat_id, freelancer_orders=False):
     context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
 
 
-def show_order_detail(context, chat_id, order_pk):
+def show_order_detail(context, chat_id, order_pk, button=True):
     order = Order.objects.get(pk=order_pk)
     message = textwrap.dedent(
         f'''
@@ -83,13 +83,16 @@ def show_order_detail(context, chat_id, order_pk):
         Создан: {order.created_at}
         '''
     )
-    reply_markup = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton('Вернуться назад', callback_data='break')],
-            [InlineKeyboardButton('Выбрать для себя', callback_data=order_pk)]
-        ],
-        resize_keyboard=True
-    )
+    if button:
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton('Вернуться назад', callback_data='break')],
+                [InlineKeyboardButton('Выбрать для себя', callback_data=order_pk)]
+            ],
+            resize_keyboard=True
+        )
+    else:
+        reply_markup = None
     context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
 
 
@@ -124,34 +127,17 @@ def show_creating_order_step(context, chat_id, step):
     message = {
         1: 'Введите краткое название заказа',
         2: 'Введите подробное описание заказа',
-        3: 'Выберите исполнителя, либо пропустите данный пункт',
-        4: 'Нажмите чтобы посмотреть весь заказа'
+        3: 'Нажмите чтобы посмотреть весь заказа'
     }
     callback_data = {
         1: 'title',
         2: 'description',
-        3: 'freelancer',
-        4: 'verify'
+        3: 'verify'
     }
     reply_markup = {
-        1: InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton('Отправить', callback_data=callback_data[step])]],
-            resize_keyboard=True
-        ),
-        2: InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton('Отправить', callback_data=callback_data[step])]],
-            resize_keyboard=True
-        ),
+        1: None,
+        2: None,
         3: InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton('Freelancer', callback_data=callback_data[step]),
-                    InlineKeyboardButton('Пропустить', callback_data='break')
-                ],
-            ],
-            resize_keyboard=True
-        ),
-        4: InlineKeyboardMarkup(
             inline_keyboard=[[InlineKeyboardButton('Весь заказ', callback_data=callback_data[step])]],
             resize_keyboard=True
         ),
