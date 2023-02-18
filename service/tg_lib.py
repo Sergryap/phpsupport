@@ -14,6 +14,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from django.conf import settings
 from users.models import Customer, Freelancer
 from service.models import Order
+from django.db.models import Q
 
 
 def show_auth_user_type(context, chat_id):
@@ -55,12 +56,49 @@ def show_send_contact_keyboard(context, chat_id):
     context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
 
 
-def show_freelancer_start(context, chat_id):
-    message = 'Подайте заявку на участие в одном из заказов:'
-    orders = Order.objects.filter(status='1 not processed')
+def show_freelancer_orders(context, chat_id, freelancer_orders=False):
+    if freelancer_orders:
+        message = 'Заказы, в которых вы участвуете:'
+    else:
+        message = 'Выберите заказ для детального ознакомления и при желании выберите его для выполнения:'
+    if freelancer_orders:
+        orders = Order.objects.filter(freelancer__telegram_id=chat_id)
+    else:
+        orders = Order.objects.filter(Q(status='33') | Q(status='1 not processed'))
+    reply_markup = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton('Вернуться назад', callback_data='break')]] + [
+            [InlineKeyboardButton(order.title, callback_data=order.pk)] for order in orders
+        ],
+        resize_keyboard=True
+    )
+    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
+
+
+def show_order_detail(context, chat_id, order_pk):
+    order = Order.objects.get(pk=order_pk)
+    message = textwrap.dedent(
+        f'''
+        Название: {order.title}
+        Описание: {order.description}
+        Создан: {order.created_at}
+        '''
+    )
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(order.title, callback_data=order.title)] for order in orders
+            [InlineKeyboardButton('Вернуться назад', callback_data='break')],
+            [InlineKeyboardButton('Выбрать для себя', callback_data=order_pk)]
+        ],
+        resize_keyboard=True
+    )
+    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
+
+
+def show_freelancer_menu(context, chat_id):
+    message = 'Выберите дальнейшее действие:'
+    reply_markup = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton('Доступные заказы', callback_data='free_orders')],
+            [InlineKeyboardButton('Посмотреть свои заказы', callback_data='my_orders')],
         ],
         resize_keyboard=True
     )

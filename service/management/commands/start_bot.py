@@ -6,6 +6,7 @@ from service.tg_bot import (
     start,
     handle_auth,
     handle_customer,
+    handle_freelancer,
     precheckout_callback,
     create_order
 )
@@ -28,6 +29,7 @@ def start_bot():
             'START': start,
             'HANDLE_AUTH': handle_auth,
             'HANDLE_CUSTOMER': handle_customer,
+            'HANDLE_FREELANCER': handle_freelancer,
             'PRECHECKOUT': precheckout_callback,
             'CREATE_ORDER': create_order
 

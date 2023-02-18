@@ -22,12 +22,14 @@ from service.tg_lib import (
     show_auth_keyboard,
     show_send_contact_keyboard,
     show_auth_user_type,
-    show_freelancer_start,
+    show_freelancer_orders,
     show_customer_start,
     show_creating_order_step,
     show_customer_step,
     show_customer_orders,
     show_freelancers,
+    show_freelancer_menu,
+    show_order_detail
 )
 from pprint import pprint
 
@@ -108,7 +110,7 @@ def handle_auth(update, context):
             freelancer.last_name = last_name
             freelancer.telegram_id = update.effective_user.id
             freelancer.save()
-            show_freelancer_start(context, chat_id)
+            show_freelancer_menu(context, chat_id)
             return 'HANDLE_FREELANCER'
         elif status == 'Customer':
             context.user_data['status'] = 'Customer'
@@ -141,6 +143,36 @@ def handle_auth(update, context):
             show_auth_user_type(context, chat_id)
             context.user_data['full_name'] = update.message.text
             return 'HANDLE_AUTH'
+
+
+def handle_freelancer(update, context):
+    chat_id = update.effective_chat.id
+    user_data = context.user_data
+    if update.callback_query and update.callback_query.data == 'free_orders':
+        user_data['freelancer_order_detail'] = True
+        show_freelancer_orders(context, chat_id)
+    elif update.callback_query and update.callback_query.data == 'my_orders':
+        show_freelancer_orders(context, chat_id, freelancer_orders=True)
+    elif user_data.get('freelancer_order_detail'):
+        if update.callback_query and update.callback_query.data != 'break':
+            order_pk = update.callback_query.data
+            show_order_detail(context, chat_id, order_pk)
+            del user_data['freelancer_order_detail']
+            user_data['freelancer_order_choice'] = True
+        else:
+            show_freelancer_menu(context, chat_id)
+    elif user_data.get('freelancer_order_choice'):
+        if update.callback_query and update.callback_query.data != 'break':
+            order_pk = update.callback_query.data
+            order = Order.objects.get(pk=order_pk)
+            freelancer = Freelancer.objects.get(telegram_id=chat_id)
+            order.freelancer = freelancer
+            order.status = '2 selected'
+            order.save()
+            del user_data['freelancer_order_choice']
+        show_freelancer_menu(context, chat_id)
+
+    return 'HANDLE_FREELANCER'
 
 
 def handle_customer(update, context):
