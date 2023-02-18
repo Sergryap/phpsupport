@@ -32,7 +32,7 @@ TELEGRAM_TOKEN=env.str('TELEGRAM_TOKEN')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://web-production-8c3f.up.railway.app/', '127.0.0.1']
+ALLOWED_HOSTS = ['web-production-3e29.up.railway.app', '127.0.0.1']
 
 
 # Application definition
